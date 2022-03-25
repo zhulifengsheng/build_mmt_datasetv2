@@ -1,0 +1,125 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>数据标注系统v2</title>
+  <!-- 下载到本地的bootstrap不好使，只能用线上的 -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+  <link rel="stylesheet" href="{% static 'layui/css/layui.css' %}">
+  <style>
+    th {
+      background-color: #359f6a; /* MediumSeaGreen */
+      color: #fff;
+      font-weight: bold
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand">数据标注系统</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li><a href="/show/1/">标注展示</a></li>
+      <li><a href="javascript:;">不看图片标注</a></li>
+      <li><a href="/annotation_with_image/">看图片标注</a></li>
+      <li><a href="/contrast/">看图片标注对比</a></li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right"> 
+      <li id="login_text">
+        <p class="navbar-text">你好，{{ request.session.info.username }}</p>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<div class="layui-container">  
+  <div class="layui-row">
+    <!-- 进度条 -->
+    <div class="layui-col-xs3">
+      <div class="layui-progress layui-progress-big" lay-showpercent="true">
+        <div class="layui-progress-bar" lay-percent="5 / 10"></div>
+      </div>
+    </div>
+    <div class="layui-col-xs3  layui-col-xs-offset1">
+      <div id="all_layerpage"></div>
+    </div>
+    <div class="layui-col-xs3  layui-col-xs-offset2">
+      1
+    </div>
+  </div>
+
+  <div class="layui-row">
+    <div class="layui-col-xs5">
+      <img src={% static image_name %} />
+    </div>
+    <div class="layui-col-xs6  layui-col-xs-offset1">
+      <table id="table_en"></table>
+    </div>
+  </div>
+  <!-- <table id="table_zh"></table> -->
+</div>
+
+<script src="{% static 'layui/layui.js' %}"></script>
+<script type="text/html" id="switchTpl1">
+  {% verbatim %}
+  <input type="checkbox" lay-skin="switch" lay-text="是|否" {{ d.is_ambiguity == 1 ? 'checked' : '' }} disabled>
+  {% endverbatim %}
+</script>
+<script>
+  layui.use(['layer', 'jquery', 'util', 'form', 'laypage', 'table'], function(){
+    var layer = layui.layer,
+    $ = layui.$,
+    util = layui.util,
+    form = layui.form,
+    laypage = layui.laypage,
+    table = layui.table;
+
+    // 设置ajax POST请求需要csrf
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+      return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+      beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+          xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+        }
+      }
+    });
+
+    laypage.render({
+      elem: 'all_layerpage',  // id
+      count: '{{ now_index }}', // 总数，设置固定值以减少服务器开销
+      limit: 1, // 每页显示一个
+      curr: "{{ now_index }}",
+      layout: ['skip'],
+      jump: function(obj, first){
+        if(!first){ // 不是第一次访问，则进行页面跳转
+          //$(window).attr('location',"/show/"+obj.curr);
+        }
+      } //分页跳转结束
+    });
+
+    table.render({
+      elem: '#table_en', //指定原始表格元素选择器（推荐id选择器）
+      url: '/api/show_en_table/',
+      cols: [[
+        {field:'id', width: 55, unresize: true, title: 'No.'},
+        {field:'caption', unresize: true, title: '英文描述'},
+        {field:'is_ambiguity', width: 77, unresize: true, title: '歧义', templet: '#switchTpl1'},
+        //{field:'is_faulty', width: 77, unresize: true, title: '语病', templet: '#switchTpl2'},
+      ]], //设置表头
+      method: 'post',
+      where: {
+        'image_id': '{{ image_id }}',
+      }
+    });
+});
+</script>
+</body>
+</html>

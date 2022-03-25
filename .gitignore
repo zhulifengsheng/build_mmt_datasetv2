@@ -1,0 +1,6 @@
+*.pyc
+*.jpg
+*.sh
+*.out
+collection_static
+data
