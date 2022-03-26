@@ -37,7 +37,7 @@
     <ul class="nav navbar-nav">
       <li><a href="/">首页</a></li>
       {% if request.session.info.username %}
-        <li><a href="javascript:;">不看图片标注</a></li>
+        <li><a href="/annotation_without_image/">不看图片标注</a></li>
         <li><a href="/annotation_with_image/">看图片标注</a></li>
         <li><a href="/contrast/">看图片标注对比</a></li>
       {% endif %}
@@ -156,8 +156,9 @@
                   if(result['is_user']){
                     layer.msg('登录成功！', {icon: 1});
                     // 登录成功之后的操作
-                    var html = '<p class="navbar-text">'+result['username']+'</p>';
-                    $('#login_text').html(html);
+                    setTimeout(function(){
+                      location.reload();
+                    }, 1500);
                   }
                   else{
                     layer.msg('用户名或密码错误！', {icon: 2});
@@ -188,16 +189,17 @@
       elem: '#table_zh', //指定原始表格元素选择器（推荐id选择器）
       url: '/api/show_zh_table/',
       cols: [[
-        {field:'id', unresize: true, title: 'No.'},
-        {field:'zh_machine_translation', width: '31%',  unresize: true, title: '机器翻译'},
-        {field:'zh_without_image', width: '31%',  unresize: true, title: '不看图片翻译'},
-        {field:'zh_with_image', width: '31%',  unresize: true, title: '看图片翻译'},
+        {field:'id', width: 55, unresize: true, title: 'No.'},
+        {field:'zh_machine_translation', unresize: true, title: '机器翻译'},
+        {field:'zh_without_image', unresize: true, title: '不看图片翻译'},
+        {field:'zh_with_image', unresize: true, title: '看图片翻译'},
       ]], //设置表头
       method: 'post',
       where: {  // 额外传递参数image_id
         'image_id': '{{ image_id }}',
       }
     });
+
     table.render({
       elem: '#table_en', //指定原始表格元素选择器（推荐id选择器）
       url: '/api/show_en_table/',

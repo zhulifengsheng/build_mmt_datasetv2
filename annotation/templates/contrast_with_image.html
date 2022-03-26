@@ -1,0 +1,294 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>数据标注系统v2</title>
+  <!-- 下载到本地的bootstrap不好使，只能用线上的 -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+  <link rel="stylesheet" href="{% static 'layui/css/layui.css' %}">
+  <style>
+    th {
+      background-color: #359f6a; /* MediumSeaGreen */
+      color: #fff;
+      font-weight: bold
+    }
+    .layui-table-cell {
+      height: auto; /* 表格高度随文本高度变化而变化 */
+      overflow: visible;  /* 内容不会被修剪，会呈现在元素框之外 */
+      text-overflow: inherit; /* 随父元素overflow一样，也是visible */
+      white-space: normal;  /*长文本换行*/
+      word-break: break-word; /*长单词换行*/
+    }
+    .layui-table-view {
+      margin-top: 0px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+{% csrf_token %}
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand">数据标注系统</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li><a href="/">首页</a></li>
+      <li><a href="javascript:;">不看图片标注</a></li>
+      <li><a href="/annotation_with_image/">看图片标注</a></li>
+      <li><a href="/contrast/">看图片标注对比</a></li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right"> 
+      <li id="login_text">
+        <p class="navbar-text">你好，{{ request.session.info.username }}</p>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<div class="layui-container">  
+  <div class="layui-row">
+    <div class="layui-col-xs5" style="text-align: center;">
+      <div class="layui-anim layui-anim-scale">
+        <!-- 图片 -->
+        <img id="img" class="img-thumbnail">
+      </div>
+    </div>
+    <div id="table_en_and_label" class="layui-col-xs6  layui-col-xs-offset1">
+      <table id="table_en"></table>
+      <div style="text-align: center;">
+        <span style="color: HotPink; font-size: 14px;" class="label">名词</span>
+        <span style="color: Tomato; font-size: 14px;" class="label">动词</span>
+        <span style="color: DeepSkyBlue; font-size: 14px;" class="label">形容词</span>
+        <span style="color: palegreen; font-size: 14px;" class="label">数量</span>
+        <span style="color: MediumOrchid; font-size: 14px;" class="label">其他</span>
+        <span style="color: LightSteelBlue; font-size: 14px;" class="label">细化</span>
+      </div>
+    </div>
+  </div>
+  <div class="layui-row" style="margin-top: 5px;">
+    <table id="table_zh"></table>
+  </div>
+</div>
+
+<div id="all_layerpage" style="text-align: center;"></div>
+
+<script src="{% static 'layui/layui.js' %}"></script>
+<script type="text/html" id="switchTpl1">
+  {% verbatim %}
+  <input type="checkbox" lay-skin="switch" lay-text="是|否" {{ d.is_ambiguity == 1 ? 'checked' : '' }} disabled>
+  {% endverbatim %}
+</script>
+<script type="text/html" id="switchTpl2">
+  {% verbatim %}
+  <input type="checkbox" lay-skin="switch" lay-text="是|否" {{ d.is_faulty == 1 ? 'checked' : '' }} disabled>
+  {% endverbatim %}
+</script>
+<script>
+  // 将后端的数据存入前端
+  var image_id_array = Array();
+  '{% for image_id in image_id_list %}'
+    image_id_array['{{ forloop.counter0 }}'] = '{{ image_id }}';
+  '{% endfor %}'
+  
+  layui.use(['layer', 'jquery', 'form', 'element', 'util', 'laypage', 'table'], function(){
+    var layer = layui.layer,
+    $ = layui.$,
+    form = layui.form,
+    element = layui.element,
+    util = layui.util,
+    laypage = layui.laypage,
+    table = layui.table;
+    
+    // 设置ajax POST请求需要csrf
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+      return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+      beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+          xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+        }
+      }
+    });
+  
+    laypage.render({
+      elem: 'all_layerpage',  // id
+      count: "{{ image_id_list|length }}", // 总数
+      limit: 1, // 每页显示一个
+      curr: 1,
+      layout: ['count', 'prev', 'page', 'next', 'skip'],
+      jump: function(obj, first){
+        if(!first){ // 不是第一次访问，则进行表格渲染
+          // 更新图片地址
+          $('#img').removeAttr('style');
+          //$('#img').removeAttr('height');
+          $.ajax({
+            url:"/api/static_image_url/",
+            data:{
+              'image_id': image_id_array[obj.curr-1],
+            },
+            async:true,
+            cache:false,
+            type:"POST",
+            dataType:"json",
+            success:function(result){
+              $('#img').attr('src', result['static_image_url']);  // 修改图片地址
+            }
+          });
+
+          '{% if has_user3 %}'
+          table.render({
+            elem: '#table_zh', //指定原始表格元素选择器（推荐id选择器）
+            url: '/api/contrast_zh_table/',
+            cols: //设置表头
+            [[
+              {field:'id', width: 55, unresize: true, title: 'No.'},
+              {field:'zh_without_image', unresize: true, title: '不看图片翻译'},
+              {field:'user1', unresize: true, title: '{{ user1 }}的标注'},
+              {field:'user2', unresize: true, title: '{{ user2 }}的标注'},
+              {field:'user3', unresize: true, title: '{{ user3 }}的标注'},
+            ]],
+            method: 'post',
+            where: {  // 额外传递参数
+              'image_id': image_id_array[obj.curr-1],
+              'user1': '{{ user1 }}',
+              'user2': '{{ user2 }}',
+              'user3': '{{ user3 }}',
+            }
+          });
+          '{% else %}'
+          table.render({
+            elem: '#table_zh', //指定原始表格元素选择器（推荐id选择器）
+            url: '/api/contrast_zh_table/',
+            cols: //设置表头
+            [[
+              {field:'id', width: 55, unresize: true, title: 'No.'},
+              {field:'zh_without_image', unresize: true, title: '不看图片翻译'},
+              {field:'user1', unresize: true, title: '{{ user1 }}的标注'},
+              {field:'user2', unresize: true, title: '{{ user2 }}的标注'},
+            ]],
+            method: 'post',
+            where: {  // 额外传递参数image_id
+              'image_id': image_id_array[obj.curr-1],
+              'user1': '{{ user1 }}',
+              'user2': '{{ user2 }}',
+              'user3': '',
+            }
+          });
+          '{% endif %}'
+
+          table.render({
+            elem: '#table_en', //指定原始表格元素选择器（推荐id选择器）
+            url: '/api/show_en_table/',
+            cols: [[
+              {field:'id', width: 55, unresize: true, title: 'No.'},
+              {field:'caption', unresize: true, title: '英文描述'},
+              {field:'is_ambiguity', width: 77, unresize: true, title: '歧义', templet: '#switchTpl1'},
+              //{field:'is_faulty', width: 77, unresize: true, title: '语病', templet: '#switchTpl2'},
+            ]], //设置表头
+            method: 'post',
+            where: {
+              'image_id': image_id_array[obj.curr-1],
+            },
+            done: function(res, curr, count){
+              // 缩小图片高度
+              var r_h = $('#table_en_and_label').outerHeight();
+              var l_h = $('#img').outerHeight();
+              var imgWidth = $("#img").width();
+              if(l_h > r_h){ 
+                $("#img").width((r_h*imgWidth)/l_h);
+                $("#img").height(r_h);
+              }
+            }
+          });
+        }
+      } //分页跳转结束
+    }); //laypage结束
+
+    $.ajax({  // 首次访问该页面获取图片地址
+      url:"/api/static_image_url/",
+      data:{
+        'image_id': image_id_array[0],
+      },  // 数据字典
+      async:true,
+      cache:false,
+      type:"POST",
+      dataType:"json",
+      success:function(result){
+        $('#img').attr('src', result['static_image_url']);  // 修改图片地址
+      }
+    });
+
+    '{% if has_user3 %}'
+    table.render({
+      elem: '#table_zh', //指定原始表格元素选择器（推荐id选择器）
+      url: '/api/contrast_zh_table/',
+      cols: //设置表头
+      [[
+        {field:'id', width: 55, unresize: true, title: 'No.'},
+        {field:'zh_without_image', unresize: true, title: '不看图片翻译'},
+        {field:'user1', unresize: true, title: '{{ user1 }}的标注'},
+        {field:'user2', unresize: true, title: '{{ user2 }}的标注'},
+        {field:'user3', unresize: true, title: '{{ user3 }}的标注'},
+      ]],
+      method: 'post',
+      where: {  // 额外传递参数image_id
+        'image_id': image_id_array[0],
+        'user1': '{{ user1 }}',
+        'user2': '{{ user2 }}',
+        'user3': '{{ user3 }}',
+      }
+    });
+    '{% else %}'
+    table.render({
+      elem: '#table_zh', //指定原始表格元素选择器（推荐id选择器）
+      url: '/api/contrast_zh_table/',
+      cols: //设置表头
+      [[
+        {field:'id', width: 55, unresize: true, title: 'No.'},
+        {field:'zh_without_image', unresize: true, title: '不看图片翻译'},
+        {field:'user1', unresize: true, title: '{{ user1 }}的标注'},
+        {field:'user2', unresize: true, title: '{{ user2 }}的标注'},
+      ]],
+      method: 'post',
+      where: {  // 额外传递参数image_id
+        'image_id': image_id_array[0],
+        'user1': '{{ user1 }}',
+        'user2': '{{ user2 }}',
+        'user3': '',
+      }
+    });
+    '{% endif %}'
+    // 第一次加载页面时，渲染
+    table.render({
+      elem: '#table_en', //指定原始表格元素选择器（推荐id选择器）
+      url: '/api/show_en_table/',
+      cols: [[
+        {field:'id', width: 55, unresize: true, title: 'No.'},
+        {field:'caption', unresize: true, title: '英文描述'},
+        {field:'is_ambiguity', width: 77, unresize: true, title: '歧义', templet: '#switchTpl1'},
+        //{field:'is_faulty', width: 77, unresize: true, title: '语病', templet: '#switchTpl2'},
+      ]], //设置表头
+      method: 'post',
+      where: {
+        'image_id': image_id_array[0],
+      },
+      done: function(res, curr, count){
+        // 缩小图片高度
+        var r_h = $('#table_en_and_label').outerHeight();
+        var l_h = $('#img').outerHeight();
+        var imgWidth = $("#img").width();
+        if(l_h > r_h){ 
+          $("#img").width((r_h*imgWidth)/l_h);
+          $("#img").height(r_h);
+        }
+      }
+    });
+  });
+</script>
+</body>
+</html>

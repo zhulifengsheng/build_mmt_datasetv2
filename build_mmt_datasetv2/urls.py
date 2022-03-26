@@ -16,14 +16,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from annotation.views import show, api, first_page, annot
+from annotation.views import show, api, first_page, annot, contrast
 urlpatterns = [
     #path('admin/', admin.site.urls),
     path('', first_page.first_page),
     path('show/<int:image_id>/', show.show),
     path('annotation_with_image/', annot.annotation_with_image),
+    path('contrast/', contrast.contrast),
     
     path('api/show_zh_table/', api.show_zh_table),
+    path('api/contrast_zh_table/', api.contrast_zh_table),
     path('api/show_en_table/', api.show_en_table),
     path('api/login/', api.login),
+    path('api/static_image_url/', api.static_image_url),
 ]

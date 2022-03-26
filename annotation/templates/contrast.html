@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>数据标注系统v2</title>
+  <!-- 下载到本地的bootstrap不好使，只能用线上的 -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+  <link rel="stylesheet" href="{% static 'layui/css/layui.css' %}">
+  <style>
+    .layui-input-block {
+      margin-left: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand">数据标注系统</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li><a href="/show/1/">标注展示</a></li>
+      <li><a href="/annotation_without_image/">不看图片标注</a></li>
+      <li><a href="/annotation_with_image/">看图片标注</a></li>
+      <li><a href="javascript:;">看图片标注对比</a></li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right"> 
+      <li id="login_text">
+        <p class="navbar-text">你好，{{ request.session.info.username }}</p>s
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<div class="layui-container">  
+  <div class="layui-row">
+    <form class="layui-form" action="" method="post">
+      {% csrf_token %}
+      <div class="layui-form-item">
+        <label class="layui-form-label layui-col-xs2">选择框</label>
+        <div class="layui-input-block layui-col-xs2">
+          <select name="which" lay-verify="required">
+            <option value="1">看图片标注</option>
+            <option value="0">不看图片标注</option>
+          </select>
+        </div>
+
+        <div class="layui-input-block layui-col-xs2">
+          <select name="user1" lay-verify="required">
+            <option value="">必选</option>
+            {% for username in usernames %}
+              <option value="{{ username }}">{{ username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="layui-input-block layui-col-xs2">
+          <select name="user2" lay-verify="required">
+            <option value="">必选</option>
+            {% for username in usernames %}
+              <option value="{{ username }}">{{ username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="layui-input-block layui-col-xs2">
+          <select name="user3">
+            <option value="">可选</option>
+            {% for username in usernames %}
+              <option value="{{ username }}">{{ username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="layui-input-block layui-col-xs2">
+          <button class="layui-btn" lay-submit lay-filter="form_contrast">对比标注</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+  
+<script src="{% static 'layui/layui.js' %}"></script>
+<script>
+  function has_same(x, y, z){
+    if(x == y | x == z | y == z){
+      return true;
+    }
+    return false;
+  }
+
+  layui.use(['layer', 'jquery', 'util', 'form'], function(){
+    var layer = layui.layer,
+    $ = layui.$,
+    util = layui.util,
+    form = layui.form;
+
+    // 在JS中使用django模板
+    '{% if error_msg %}'
+      layer.msg('没有公共标注的内容', {icon: 2});
+    '{% endif %}'
+
+    //监听提交
+    form.on('submit(form_contrast)', function(data){
+      if(has_same(data.field['user1'], data.field['user2'], data.field['user3'])){
+        layer.msg('重复的用户选择！', {icon: 2});
+        return false;
+      }
+    });
+  });
+</script>
+</body>
+</html>
