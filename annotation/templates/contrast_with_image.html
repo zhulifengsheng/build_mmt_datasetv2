@@ -124,18 +124,17 @@
       jump: function(obj, first){
         if(!first){ // 不是第一次访问，则进行表格渲染
           // 更新图片地址
-          $('#img').removeAttr('style');
-          //$('#img').removeAttr('height');
           $.ajax({
             url:"/api/static_image_url/",
             data:{
               'image_id': image_id_array[obj.curr-1],
             },
-            async:true,
+            async:false,
             cache:false,
             type:"POST",
             dataType:"json",
             success:function(result){
+              $('#img').removeAttr('style');
               $('#img').attr('src', result['static_image_url']);  // 修改图片地址
             }
           });
@@ -214,7 +213,7 @@
       data:{
         'image_id': image_id_array[0],
       },  // 数据字典
-      async:true,
+      async:false,
       cache:false,
       type:"POST",
       dataType:"json",

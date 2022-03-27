@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>数据库信息</title>
+</head>
+<body>
+  <div style="text-align: center;">
+    图片总数: {{ img_total_number }}<br/>
+    描述总数: {{ cap_total_number }}<br/>
+    <!-- 不看图片标注: {{ img_without_image_number }} / {{ img_total_number }} - {{ zh_without_image_number }} / {{ cap_total_number }}<br/> -->
+    <!-- 看图片标注: {{ img_with_image_number }} / {{ img_total_number }} - {{ zh_with_image_number }} / {{ cap_total_number }}<br/> -->
+    
+    <!-- 多种翻译标记数: {{ ambiguity_number }} / {{ cap_total_number }}<br/> -->
+    <!-- 语法错误标记数: {{ faulty_number }} / {{ cap_total_number }}<br/> -->
+
+    <!-- 标注者们对{{ fix_zh_image_total_number }}张图片，进行了{{ fix_zh_total_number }}个修正译文标注<br/> -->
+    
+    总标记数: {{ fix_zh_image_total_number }}<br/>
+    名词错误标记数: {{ noun_error_number }}<br/>
+    动词错误标记数: {{ verb_error_number }}<br/>
+    形容词错误标记数: {{ adj_error_number }}<br/>
+    数量错误标记数: {{ number_error_number }}<br/>
+    其他错误标记数: {{ other_error_number }}<br/>
+    细化标记数: {{ xihua_error_number }}<br/>
+    
+  </div>
+</body>

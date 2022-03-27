@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from annotation.views import show, api, first_page, annot, contrast
+from annotation.views import show, api, first_page, annot, contrast, statis
 urlpatterns = [
     #path('admin/', admin.site.urls),
     path('', first_page.first_page),
@@ -29,4 +29,6 @@ urlpatterns = [
     path('api/show_en_table/', api.show_en_table),
     path('api/login/', api.login),
     path('api/static_image_url/', api.static_image_url),
+
+    path('statis/', statis.statis),
 ]

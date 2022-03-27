@@ -5,11 +5,11 @@ from annotation.models import Caption, User, ZhWithoutImage, FixZhWithImage
 
 def _get_image_set(user_zh):
     if user_zh and user_zh.exists():    # user_zh存在且QuerySet集合中有值
-        res = []
-        for i in user_zh:
-            if 'coco' in Caption.objects.get(id=i.caption_id).image_obj.image_name:
-                res.append(Caption.objects.get(id=i.caption_id).image_obj_id)
-        return set(res)
+        # res = []
+        # for i in user_zh:
+        #     if i.fix_zh_with_image.count('</span>') > 1:
+        #         res.append(Caption.objects.get(id=i.caption_id).image_obj_id)
+        # return set(res)
         return set([Caption.objects.get(id=i.caption_id).image_obj_id for i in user_zh])
     return None
 
